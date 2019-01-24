@@ -1,5 +1,8 @@
 package info.papdt.blackblub.ui;
 
+import android.view.WindowManager;
+
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
@@ -26,6 +29,7 @@ import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.provider.Settings.System;
 
 import com.github.zagum.expandicon.ExpandIconView;
 
@@ -46,6 +50,7 @@ public class MainActivity extends Activity {
     // Views & States
     private ImageButton mToggle;
     private SeekBar mSeekBar;
+    private SeekBar mSeekBarBrightness;
     private ExpandIconView mExpandIcon;
     private View mDivider, mMiniSchedulerBar;
     private TextView mMiniSchedulerStatus, mButtonTip;
@@ -159,7 +164,7 @@ public class MainActivity extends Activity {
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                currentProgress = progress + 20;
+                currentProgress = progress +10;
                 if (isRunning) {
                     // Only send broadcast when running
                     Intent intent = new Intent(MainActivity.this, MaskService.class);
@@ -173,6 +178,40 @@ public class MainActivity extends Activity {
                 if (currentProgress != -1) {
                     mSettings.setBrightness(currentProgress);
                 }
+            }
+        });
+
+        //brightness
+        mSeekBarBrightness = findViewById(R.id.seek_bar_brightness);
+        Context context=getApplicationContext();
+        int oldBrightness = android.provider.Settings.System.getInt(context.getContentResolver(),
+                android.provider.Settings.System.SCREEN_BRIGHTNESS,-1);
+        setSeekBarBrightnessProgress(oldBrightness);
+        mSeekBarBrightness.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            int currentProgress = -1;
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                currentProgress = progress;
+                if (isRunning) {
+                    // Only send broadcast when running
+//                    Intent intent = new Intent(MainActivity.this, MaskService.class);
+//                    intent.putExtra(Constants.Extra.ACTION, Constants.Action.UPDATE);
+//                    intent.putExtra(Constants.Extra.BRIGHTNESS, currentProgress);
+//                    startService(intent);
+
+//                    android.provider.Settings.System.putInt(context.getContentResolver(), android.provider.Settings.System.SCREEN_BRIGHTNESS, currentProgress);
+
+                    WindowManager.LayoutParams layout = getWindow().getAttributes();
+                    layout.screenBrightness = currentProgress /255f;
+                    getWindow().setAttributes(layout);
+                }
+            }
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+//                if (currentProgress != -1) {
+//                    mSettings.setBrightness(currentProgress);
+//                }
             }
         });
 
@@ -436,6 +475,15 @@ public class MainActivity extends Activity {
                 return true;
         }
         return super.onKeyDown(keyCode, event);
+    }
+
+    private void setSeekBarBrightnessProgress(int progress) {
+        progress = Math.max(0, Math.min(255, progress));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            mSeekBarBrightness.setProgress(progress, true);
+        } else {
+            mSeekBarBrightness.setProgress(progress);
+        }
     }
 
     private void setSeekBarProgress(int progress) {
